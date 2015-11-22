@@ -1,0 +1,29 @@
+{
+  "name": "node-mysql-helper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "DbObject.js",
+  "scripts": {
+    "test": "make test REPORTER=spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Oiawo/node-mysql-helper.git"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Oiawo/node-mysql-helper/issues"
+  },
+  "homepage": "https://github.com/Oiawo/node-mysql-helper#readme",
+  "dependencies": {
+    "boom": "^3.0.0",
+    "crypto": "0.0.3",
+    "joi": "^7.0.0",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {
+    "istanbul": "^0.4.0",
+    "mocha": "^2.3.4"
+  }
+}
