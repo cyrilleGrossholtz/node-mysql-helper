@@ -20,16 +20,16 @@ exports.find = function(Model) {
 
 	obj.currentModel = Model;
 
-	obj.select = "SELECT *";
-	obj.from = [{name:Model.NAME}]; // array of obj {name: String, key: String, keyf: String}
-	obj.where = []; // array of obj {identifier:String, field:String, value:String}
+	obj._select = "SELECT *";
+	obj._from = [{"Model":Model}]; // array of obj {Model: Model, key: String, keyf: String}
+	obj._where = []; // array of obj {identifier:String, field:String, value:String}
 
 
 	obj.innerJoin = function(otherModel) {
 		obj.currentModel = otherModel;
 		_.each(Model.innerJoin(otherModel), function(value) {
 			idx++;
-			obj.from.push(value);
+			obj._from.push(value);
 		});
 		return obj;
 	};
@@ -39,14 +39,14 @@ exports.find = function(Model) {
 	}
 
 	obj.where = function(field, value) {
-		obj.
+		obj.obj.currentModel
 		return obj;
 	};
 
 	obj.toString = function() {
-		var res = obj.select;
+		var res = obj._select;
 		res += " FROM";
-		_.each(obj.from, function(value, index) {
+		_.each(obj._from, function(value, index) {
 			if (index >= 1)
 				
 			res += value;
@@ -54,4 +54,4 @@ exports.find = function(Model) {
 	};
 
 	return obj;
-}
+};
