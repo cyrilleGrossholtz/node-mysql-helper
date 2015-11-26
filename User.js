@@ -1,15 +1,15 @@
 module.exports = {
-	NAME: "LIST",
+	NAME: "USER",
 	join: {
 		// [{NAME: String, key: String, keyf: String}]
-		'USER': [{
+		'LIST': [{
 			NAME: "USER_HAS_LIST",
-			key: "LIST_ID",
+			key: "USER_ID",
 			keyf: "ID"
 		}, {
-			NAME: "USER",
+			NAME: "LIST",
 			key: "ID",
-			keyf: "USER_ID"
+			keyf: "LIST_ID"
 		}]
 	},
 	where: {
