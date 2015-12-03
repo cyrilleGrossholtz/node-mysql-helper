@@ -2,20 +2,41 @@
 This is a WIP plugin that aims at creating SQL query in a javascript way :
 
 **DbObject.find(List).toString()**
-SELECT * FROM **LIST** LIST0
+```sql
+SELECT * FROM LIST LIST0
+```
 
 **DbObject.find(List).where("ID", " = ?", 1).toString()**
-SELECT * FROM **LIST** LIST0 WHERE LIST0.**ID = ?**
+```sql
+SELECT * 
+	FROM LIST LIST0 
+	WHERE LIST0.ID = ?
+```
+```javascript
 args = [1]
+```
 
 **DbObject.find(List).innerJoin(User).toString()**
-SELECT * FROM **LIST** LIST0 INNER JOIN **USER_HAS_LIST** USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID INNER JOIN **USER** USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID
+```sql
+SELECT * 
+	FROM LIST LIST0 
+	INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID 
+	INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID
+```
 (works with any number of joining table)
 
+**DbObject.find(List).innerJoin(User).on('RIGHTS', " > 1").toString()**
+```sql
+SELECT * 
+	FROM LIST LIST0 
+	INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID 
+		AND USER_HAS_LIST1.RIGHTS > 1 
+	INNER JOIN **USER** USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID
+```
 # Configuration files (model description):
 This is an exemple of configuration model
 ## Exemple model
-```
+```sql
 CREATE TABLE `USER` (
     `ID` INT(11) NOT NULL AUTO_INCREMENT,
     `EMAIL` VARCHAR(100) NOT NULL
@@ -34,7 +55,7 @@ CREATE TABLE `LIST` (
 
 ## Configuration files
 
-```
+```javascript
 module.exports = {
 	NAME: "LIST",
 	join: {
