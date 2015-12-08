@@ -1,21 +1,35 @@
 module.exports = {
 	NAME: "USER",
+	identifier : "ID",
+	select: {
+		USERNAME: "nameOfTheUser",
+		PASSWORD: false
+	},
 	join: {
 		// [{NAME: String, key: String, keyf: String}]
-		'LIST': [{
+		LIST: [{
 			NAME: "USER_HAS_LIST",
+			keyf: "ID",
 			key: "USER_ID",
-			keyf: "ID"
+			identifier : "ID",
+			select: {
+				RIGHTS: "level"
+			}
 		}, {
 			NAME: "LIST",
-			key: "ID",
-			keyf: "LIST_ID"
+			keyf: "LIST_ID",
+			key: "ID"
+		}],
+		AVATAR: [{
+			NAME: "AVATAR",
+			keyf: "AVATAR_ID",
+			key: "ID"
 		}]
 	},
 	where: {
 		// {field: String, value: String, decalage: int};
-		'RIGHTS': {
-			decalage: -1
+		RIGHTS: {
+			decalage: "parent"
 		}
 	}
 };

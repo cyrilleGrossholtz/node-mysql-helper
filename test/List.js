@@ -1,21 +1,29 @@
 module.exports = {
 	NAME: "LIST",
+	identifier : "ID", // will resolve to default if not defined
+	select: {
+		NAME: "nameOfTheList"
+	},
 	join: {
 		// [{NAME: String, key: String, keyf: String}]
-		'USER': [{
+		USER: [{
 			NAME: "USER_HAS_LIST",
+			keyf: "ID",
 			key: "LIST_ID",
-			keyf: "ID"
+			identifier : "ID"
 		}, {
 			NAME: "USER",
+			keyf: "USER_ID",
 			key: "ID",
-			keyf: "USER_ID"
+			select:{
+				ID: "identifier"
+			}
 		}]
 	},
 	where: {
 		// {field: String, value: String, decalage: int};
-		'RIGHTS': {
-			decalage: -1
+		RIGHTS: {
+			decalage: "parent"
 		}
 	}
 };

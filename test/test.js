@@ -3,10 +3,7 @@ var assert = require("assert");
 var DbObject = require("../DbObject");
 var List = require("./List");
 var User = require("./User");
-
-var Dumb = {
-    NAME: "DUMB"
-};
+var Avatar = require("./Avatar");
 
 describe('List', function() {
     describe('#find', function() {
@@ -94,6 +91,14 @@ describe('List', function() {
 });
 
 describe('User', function() {
+    describe('#simple from', function() {
+        it('@should resolve on to where when no join is defined', function() {
+            assert.equal(
+                DbObject.find(User).on('OTHERFIELD', " = ?", 1).toString(),
+                "SELECT * FROM USER USER0 WHERE USER0.OTHERFIELD = ?"
+            );
+        });
+    });
     describe('#left join with List', function() {
         it('@should create query for simple select with left join', function() {
             assert.equal(
@@ -108,61 +113,46 @@ describe('User', function() {
             );
         });
     });
-    describe('#join with Dumb for unspecified cases', function() {
-        it('@should throw when inner join with User', function() {
+    describe('#join from Avatar', function() {
+        it('@should throw when inner join does not exists', function() {
             var req;
             assert.throws(function() {
-                req = DbObject.find(Dumb).innerJoin(User).toString();
+                req = DbObject.find(Avatar).innerJoin(User).toString();
             });
         });
-        it('@should throw when left join with User', function() {
+        it('@should throw when left join does not exists', function() {
             var req;
             assert.throws(function() {
-                req = DbObject.find(Dumb).leftJoin(User).toString();
+                req = DbObject.find(Avatar).leftJoin(User).toString();
             });
         });
         it('@should throw when inner join is an empty array', function() {
             var OtherUser = _.clone(User);
             OtherUser.join = {
-                'DUMB': []
+                'AVATAR': []
             };
             assert.throws(function() {
-                DbObject.find(OtherUser).leftJoin(Dumb).toString()
+                DbObject.find(OtherUser).leftJoin(Avatar).toString()
             });
         });
         it('@should throw when left join is an empty array', function() {
             var OtherUser = _.clone(User);
             OtherUser.join = {
-                'DUMB': []
+                'AVATAR': []
             };
             assert.throws(function() {
-                DbObject.find(OtherUser).leftJoin(Dumb).toString()
+                DbObject.find(OtherUser).leftJoin(Avatar).toString()
             });
         });
-        it('@should resolve on to where when no join is defined', function() {
-
+        it('@should work with single join too and where clause on last element', function() {
             assert.equal(
-                DbObject.find(User).on('OTHERFIELD', " = ?", 1).toString(),
-                "SELECT * FROM USER USER0 WHERE USER0.OTHERFIELD = ?"
+                DbObject.find(User).leftJoin(Avatar).where('OTHERFIELD', " = ?", 1).toString(),
+                "SELECT * FROM USER USER0 LEFT JOIN AVATAR AVATAR1 ON AVATAR1.ID = USER0.AVATAR_ID WHERE AVATAR1.OTHERFIELD = ?"
             );
         });
-        it('@should throw when join with User with where clause', function() {
-            var OtherUser = _.clone(User);
-            OtherUser.join = {
-                'DUMB': [{
-                    NAME: "DUMB",
-                    key: "DUMB_ID",
-                    keyf: "ID"
-                }]
-            };
-            assert.equal(
-                DbObject.find(OtherUser).leftJoin(Dumb).where('OTHERFIELD', " = ?", 1).toString(),
-                "SELECT * FROM USER USER0 LEFT JOIN DUMB DUMB1 ON DUMB1.DUMB_ID = USER0.ID WHERE DUMB1.OTHERFIELD = ?"
-            );
-        });
-        it('@should throw when you play with impossible inner values', function() {
+        it('@should throw when you play with impossible inner values (nasty boy !)', function() {
             var req;
-            req = DbObject.find(Dumb);
+            req = DbObject.find(Avatar);
             req._from.push({
                 type: "FAKE"
             });
@@ -173,13 +163,468 @@ describe('User', function() {
     });
 });
 
+describe('Digest', function() {
+    describe('#digestNested', function() {
+        it('@should throw if argument is not array', function() {
+            assert.throws(function() {
+                DbObject.find(List).digestNested("not an array");
+            });
+        });
+        it('@should should throw when digested object name does not match on first model', function() {
+            assert.throws(function() {
+                var res = DbObject.find(List).digestNested(
+                    [{
+                        SOMETHING_BAD: {
+                            ID: 20,
+                            NAME: "test",
+                            DT_CRE: new Date(2015, 3, 5)
+                        }
+                    }]
+                );
+            });
+        });
+        it('@should should throw when digested object name does not match on second model', function() {
+            assert.throws(function() {
+                var res = DbObject.find(User).innerJoin(Avatar).digestNested(
+                    [{
+                        USER0: {
+                            ID: 20,
+                            NAME: "test",
+                            DT_CRE: new Date(2015, 3, 5)
+                        },
+                        SOMETHING_BAD: {
+                            ID: 20,
+                            NAME: "test",
+                            DT_CRE: new Date(2015, 3, 5)
+                        }
+                    }]
+                );
+            });
+        });
+        it('@should create required object when right single table, single line', function() {
+            var res = DbObject.find(List).digestNested(
+                [{
+                    LIST0: {
+                        ID: 20,
+                        NAME: "test",
+                        DT_CRE: new Date(2015, 3, 5)
+                    }
+                }]
+            );
+            assert.deepEqual(res, [{
+                id: 20,
+                nameOfTheList: "test",
+                dtCre: new Date(2015, 3, 5)
+            }]);
+        });
+        it('@should create required object when right single table, multiple line', function() {
+            var res = DbObject.find(List).digestNested(
+                [{
+                    LIST0: {
+                        ID: 20,
+                        NAME: "test",
+                        DT_CRE: new Date(2015, 3, 5)
+                    }
+                }, {
+                    LIST0: {
+                        ID: 21,
+                        NAME: "other test",
+                        DT_CRE: new Date(2015, 4, 6)
+                    }
+                }]
+            );
+            assert.deepEqual(res, [{
+                id: 20,
+                nameOfTheList: "test",
+                dtCre: new Date(2015, 3, 5)
+            }, {
+                id: 21,
+                nameOfTheList: "other test",
+                dtCre: new Date(2015, 4, 6)
+            }]);
+        });
+        it('@should create required object when right multiple table, single line', function() {
+            var res = DbObject.find(User).innerJoin(Avatar).digestNested(
+                [{
+                    USER0: {
+                        ID: 20,
+                        USERNAME: "test",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 3, 5)
+                    },
+                    AVATAR1: {
+                        ID: 100,
+                        NAME: "other test",
+                        DT_CRE: new Date(2015, 4, 6)
+                    }
+                }]
+            );
+            assert.deepEqual(res, [{
+                id: 20,
+                nameOfTheUser: "test",
+                dtCre: new Date(2015, 3, 5),
+                listOfAvatar: [{
+                    id: 100,
+                    nameOfTheAvatar: "other test",
+                    dtCre: new Date(2015, 4, 6)
+                }]
+            }]);
+        });
+        it('@should create required object when right multiple table, multiple totally different lines', function() {
+            var res = DbObject.find(User).innerJoin(Avatar).digestNested(
+                [{
+                    USER0: {
+                        ID: 20,
+                        USERNAME: "test",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 3, 5)
+                    },
+                    AVATAR1: {
+                        ID: 100,
+                        NAME: "other test",
+                        DT_CRE: new Date(2015, 4, 6)
+                    }
+                }, {
+                    USER0: {
+                        ID: 21,
+                        USERNAME: "test 1",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 3, 5)
+                    },
+                    AVATAR1: {
+                        ID: 101,
+                        NAME: "other test 1",
+                        DT_CRE: new Date(2015, 4, 6)
+                    }
+                }]
+            );
+            assert.deepEqual(res, [{
+                id: 20,
+                nameOfTheUser: "test",
+                dtCre: new Date(2015, 3, 5),
+                listOfAvatar: [{
+                    id: 100,
+                    nameOfTheAvatar: "other test",
+                    dtCre: new Date(2015, 4, 6)
+                }]
+            }, {
+                id: 21,
+                nameOfTheUser: "test 1",
+                dtCre: new Date(2015, 3, 5),
+                listOfAvatar: [{
+                    id: 101,
+                    nameOfTheAvatar: "other test 1",
+                    dtCre: new Date(2015, 4, 6)
+                }]
+            }]);
+        });
+        it('@should create required object when right multiple table, multiple different lines (1st element common)', function() {
+            var res = DbObject.find(User).innerJoin(Avatar).digestNested(
+                [{
+                    USER0: {
+                        ID: 20,
+                        USERNAME: "other test",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 4, 6)
+                    },
+                    AVATAR1: {
+                        ID: 100,
+                        NAME: "test",
+                        DT_CRE: new Date(2015, 3, 5)
+                    }
+                }, {
+                    USER0: {
+                        ID: 20,
+                        USERNAME: "other test",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 4, 6)
+                    },
+                    AVATAR1: {
+                        ID: 101,
+                        NAME: "test 1",
+                        DT_CRE: new Date(2015, 3, 5)
+                    }
+                }]
+            );
+            assert.deepEqual(res, [{
+                id: 20,
+                nameOfTheUser: "other test",
+                dtCre: new Date(2015, 4, 6),
+                listOfAvatar: [{
+                    id: 100,
+                    nameOfTheAvatar: "test",
+                    dtCre: new Date(2015, 3, 5)
+                }, {
+                    id: 101,
+                    nameOfTheAvatar: "test 1",
+                    dtCre: new Date(2015, 3, 5)
+                }]
+            }]);
+        });
+
+        it('@should create required object when complicated case', function() {
+            var res = DbObject.find(List).innerJoin(User).innerJoin(Avatar).digestNested(
+                [{ // line 1
+                    LIST0: {
+                        ID: 1,
+                        NAME: "list 1",
+                        DT_CRE: new Date(2015, 1, 1)
+                    },
+                    USER_HAS_LIST1: {
+                        ID: 1,
+                        NAME: "user has list 1",
+                        DT_CRE: new Date(2015, 2, 2)
+                    },
+                    USER2: {
+                        ID: 1,
+                        USERNAME: "user 1",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 3, 3)
+                    },
+                    AVATAR3: {
+                        ID: 1,
+                        NAME: "avatar 1",
+                        DT_CRE: new Date(2015, 4, 4)
+                    }
+                }, { // line 2
+                    LIST0: {
+                        ID: 1,
+                        NAME: "list 1",
+                        DT_CRE: new Date(2015, 1, 1)
+                    },
+                    USER_HAS_LIST1: {
+                        ID: 2,
+                        NAME: "user has list 2",
+                        DT_CRE: new Date(2015, 2, 2)
+                    },
+                    USER2: {
+                        ID: 2,
+                        USERNAME: "user 2",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 3, 3)
+                    },
+                    AVATAR3: {
+                        ID: 1,
+                        NAME: "avatar 1",
+                        DT_CRE: new Date(2015, 4, 4)
+                    }
+                }, { // line 3
+                    LIST0: {
+                        ID: 1,
+                        NAME: "list 1",
+                        DT_CRE: new Date(2015, 1, 1)
+                    },
+                    USER_HAS_LIST1: {
+                        ID: 3,
+                        NAME: "user has list 3",
+                        DT_CRE: new Date(2015, 2, 2)
+                    },
+                    USER2: {
+                        ID: 3,
+                        USERNAME: "user 3",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 3, 3)
+                    },
+                    AVATAR3: {
+                        ID: 2,
+                        NAME: "avatar1",
+                        DT_CRE: new Date(2015, 4, 4)
+                    }
+                }, { // line 4
+                    LIST0: {
+                        ID: 1,
+                        NAME: "list 1",
+                        DT_CRE: new Date(2015, 1, 1)
+                    },
+                    USER_HAS_LIST1: {
+                        ID: 3,
+                        NAME: "user has list 3",
+                        DT_CRE: new Date(2015, 2, 2)
+                    },
+                    USER2: {
+                        ID: 4,
+                        USERNAME: "user 4",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 3, 3)
+                    },
+                    AVATAR3: {
+                        ID: 2,
+                        NAME: "avatar 2",
+                        DT_CRE: new Date(2015, 4, 4)
+                    }
+                }, { // line 5
+                    LIST0: {
+                        ID: 2,
+                        NAME: "list 2",
+                        DT_CRE: new Date(2015, 1, 1)
+                    },
+                    USER_HAS_LIST1: {
+                        ID: 3,
+                        NAME: "user has list 1",
+                        DT_CRE: new Date(2015, 2, 2)
+                    },
+                    USER2: {
+                        ID: 4,
+                        USERNAME: "user 4",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 3, 3)
+                    },
+                    AVATAR3: {
+                        ID: 3,
+                        NAME: "avatar 3",
+                        DT_CRE: new Date(2015, 4, 4)
+                    }
+                }, { // line 6
+                    LIST0: {
+                        ID: 1,
+                        NAME: "list 1",
+                        DT_CRE: new Date(2015, 1, 1)
+                    },
+                    USER_HAS_LIST1: {
+                        ID: 1,
+                        NAME: "user has list 1",
+                        DT_CRE: new Date(2015, 2, 2)
+                    },
+                    USER2: {
+                        ID: 1,
+                        USERNAME: "user 1",
+                        PASSWORD: "secret",
+                        DT_CRE: new Date(2015, 3, 3)
+                    },
+                    AVATAR3: {
+                        ID: 1,
+                        NAME: "avatar 1",
+                        DT_CRE: new Date(2015, 4, 4)
+                    }
+                }]
+            );
+            assert.deepEqual(res, [{
+                "dtCre": new Date(2015, 1, 1),
+                "id": 1,
+                "nameOfTheList": "list 1",
+                "listOfUserHasList": [{
+                    "dtCre": new Date(2015, 2, 2),
+                    "id": 1,
+                    "listOfUser": [{
+                        "dtCre": new Date(2015, 3, 3),
+                        "identifier": 1,
+                        "listOfAvatar": [{
+                            "dtCre": new Date(2015, 4, 4),
+                            "id": 1,
+                            "nameOfTheAvatar": "avatar 1"
+                        }],
+                        "nameOfTheUser": "user 1"
+                    }],
+                    "name": "user has list 1"
+                }, {
+                    "dtCre": new Date(2015, 2, 2),
+                    "id": 2,
+                    "listOfUser": [{
+                        "dtCre": new Date(2015, 3, 3),
+                        "identifier": 2,
+                        "listOfAvatar": [{
+                            "dtCre": new Date(2015, 4, 4),
+                            "id": 1,
+                            "nameOfTheAvatar": "avatar 1"
+                        }],
+                        "nameOfTheUser": "user 2"
+                    }],
+                    "name": "user has list 2"
+                }, {
+                    "dtCre": new Date(2015, 2, 2),
+                    "id": 3,
+                    "listOfUser": [{
+                        "dtCre": new Date(2015, 3, 3),
+                        "identifier": 3,
+                        "listOfAvatar": [{
+                            "dtCre": new Date(2015, 4, 4),
+                            "id": 2,
+                            "nameOfTheAvatar": "avatar1"
+                        }],
+                        "nameOfTheUser": "user 3"
+                    }, {
+                        "dtCre": new Date(2015, 3, 3),
+                        "identifier": 4,
+                        "listOfAvatar": [{
+                            "dtCre": new Date(2015, 4, 4),
+                            "id": 2,
+                            "nameOfTheAvatar": "avatar 2"
+                        }],
+                        "nameOfTheUser": "user 4"
+                    }],
+                    "name": "user has list 3"
+                }]
+            }, {
+                "dtCre": new Date(2015, 1, 1),
+                "id": 2,
+                "listOfUserHasList": [{
+                    "dtCre": new Date(2015, 2, 2),
+                    "id": 3,
+                    "listOfUser": [{
+                        "dtCre": new Date(2015, 3, 3),
+                        "identifier": 4,
+                        "listOfAvatar": [{
+                            "dtCre": new Date(2015, 4, 4),
+                            "id": 3,
+                            "nameOfTheAvatar": "avatar 3"
+                        }],
+                        "nameOfTheUser": "user 4"
+                    }],
+                    "name": "user has list 1"
+                }],
+                "nameOfTheList": "list 2"
+            }, {
+                "dtCre": new Date(2015, 1, 1),
+                "id": 1,
+                "listOfUserHasList": [{
+                    "dtCre": new Date(2015, 2, 2),
+                    "id": 1,
+                    "listOfUser": [{
+                        "dtCre": new Date(2015, 3, 3),
+                        "identifier": 1,
+                        "listOfAvatar": [{
+                            "dtCre": new Date(2015, 4, 4),
+                            "id": 1,
+                            "nameOfTheAvatar": "avatar 1"
+                        }],
+                        "nameOfTheUser": "user 1"
+                    }],
+                    "name": "user has list 1"
+                }],
+                "nameOfTheList": "list 1"
+            }]);
+        });
+
+    });
+});
+
 
 describe('transform', function() {
     describe('#toCamel', function() {
         it('@should work in simple cases', function() {
             var dash = "CECI_EST_UN-TEST";
-            var camel = DbObject.utils.toCamel(dash);
+            var camel = DbObject.stringUtils.toCamel(dash);
             assert.equal(camel, "ceciEstUnTest");
+        });
+    });
+    describe('#startsWith', function() {
+        it('@should work in simple cases', function() {
+            var string = "string";
+            assert.equal(DbObject.stringUtils.startsWith(string, ""), true);
+            assert.equal(DbObject.stringUtils.startsWith(string, "str"), true);
+            assert.equal(DbObject.stringUtils.startsWith(string, "stri"), true);
+            assert.equal(DbObject.stringUtils.startsWith(string, "string"), true);
+            assert.equal(DbObject.stringUtils.startsWith(string, "stringa"), false);
+            assert.equal(DbObject.stringUtils.startsWith(string, "astr"), false);
+        });
+    });
+    describe('#occurrences', function() {
+        it('@should work in simple cases', function() {
+            var regexp = /foo/gi;
+            assert.equal(DbObject.stringUtils.occurrences("other", regexp), 0);
+            assert.equal(DbObject.stringUtils.occurrences("foo", regexp), 1);
+            assert.equal(DbObject.stringUtils.occurrences("foofoofoo", regexp), 3);
+            assert.equal(DbObject.stringUtils.occurrences("fooFoofoo", regexp), 3);
         });
     });
 });
