@@ -16,6 +16,16 @@ var defaultIdentifier = "ID";
 //   INNER JOIN USER USER3 ON USER_HAS_LIST2.USER_ID = USER3.ID
 //   WHERE LIST1.ID = 2 AND USER3.ID = 1
 
+
+/**
+ * find
+ * First function to call to create query, it creates the context objects :
+ * obj._select -> Contains the string with the SELECT query (currently "SELECT *", but this should be perfected in the future)
+ * obj._from -> Contains the ordered array of the tables that should be returned by the query, each containing minimal informations for processing
+ * obj._where -> Contains the ordered array of the where clauses
+ * obj._argsOn -> First ordered array of arguments for on clauses to be escaped in the query
+ * obj._args -> Second ordered array of arguments for where clauses to be escaped in the query
+ */
 exports.find = function(Model) {
 	var idx = 0;
 	var obj = {};
@@ -23,17 +33,34 @@ exports.find = function(Model) {
 
 	obj.currentModel = Model;
 
-	obj._select = "SELECT *";
+	obj._select = "SELECT *"; // String
 	obj._from = [{
 		"type": undefined,
 		"NAME": Model.NAME,
 		"identifier": Model.identifier,
 		"on": [],
 		"select": Model.select
-	}]; // array of obj {type: String, NAME: String, key: String, keyf: String, on:[_where]}
-	obj._where = []; // array of obj {key:String, field:String, value:String}
-	obj._args = [];
-	obj._argsOn = [];
+	}];
+	/* _from : array of obj :
+		{
+			type: String,
+			NAME: String,
+			key: String,
+			keyf: String,
+			on:[_where],
+			select: {field: objective}
+		}
+	*/
+	obj._where = [];
+	/* _where : array of obj :
+		{
+			key:String,
+			field:String,
+			value:String
+		}
+	*/
+	obj._args = []; // array of anything
+	obj._argsOn = []; // array of anything
 
 	obj.innerJoin = function(otherModel) {
 		return _join(otherModel, INNER_JOIN);
@@ -67,11 +94,11 @@ exports.find = function(Model) {
 			obj._from.push(add);
 			// add the new model in the stack
 		});
-		if(!obj._from[obj._from.length-1].hasOwnProperty("select")) {
-			obj._from[obj._from.length-1].select = {};
+		if (!obj._from[obj._from.length - 1].hasOwnProperty("select")) {
+			obj._from[obj._from.length - 1].select = {};
 		}
 		_.each(otherModel.select, function(value, index) {
-			obj._from[obj._from.length-1].select[index] = value;
+			obj._from[obj._from.length - 1].select[index] = value;
 		});
 
 		obj.currentModel = otherModel;
@@ -113,8 +140,8 @@ exports.find = function(Model) {
 			where = {
 				decalage: -(stringUtils.occurrences(obj.currentModel.where[field].decalage, PARENT))
 			};
-		console.log("where.decalage");
-		console.log(where.decalage);
+			console.log("where.decalage");
+			console.log(where.decalage);
 		} else {
 			where = {
 				decalage: 0
@@ -147,11 +174,11 @@ exports.find = function(Model) {
 				switch (value.type) {
 					case INNER_JOIN:
 						res += " " + INNER_JOIN + " " + value.NAME + " " + i_key(value.NAME, index) + " ON " + i_key(value.NAME, index) + "." + value.key + " = " + i_key(previous.NAME, index - 1) + "." + value.keyf
-						res += i_on(value.on);
+						res += i_where(value.on);
 						break;
 					case LEFT_JOIN:
 						res += " " + LEFT_JOIN + " " + value.NAME + " " + i_key(value.NAME, index) + " ON " + i_key(value.NAME, index) + "." + value.key + " = " + i_key(previous.NAME, index - 1) + "." + value.keyf
-						res += i_on(value.on);
+						res += i_where(value.on);
 						break;
 					default:
 						console.log("THROWING : [Type [" + value.type + "] not currently implemented in FROM clause]");
@@ -181,26 +208,6 @@ exports.find = function(Model) {
 		});
 		return res;
 	};
-
-	var i_key = function(NAME, idx) {
-		return NAME + idx;
-	};
-
-	var i_on = function(on) {
-		var res = "";
-		_.each(on, function(value) {
-			res += " AND " + value.key + "." + value.field + value.value;
-		});
-		return res;
-	};
-
-	var i_internObj = function(propName) {
-		return stringUtils.toCamel(listOf + "_" + propName);
-	};
-
-	var i_internProperty = function(propName) {
-		return stringUtils.toCamel(propName);
-	}
 
 	obj.digestNested = function(dbResult) {
 		/*
@@ -263,17 +270,17 @@ exports.find = function(Model) {
 			var robj;
 			robj = {};
 			_.each(cobj, function(value, index) {
-				console.log("index: "+index);
+				console.log("index: " + index);
 				console.log(from.select);
 				if (from.select && from.select.hasOwnProperty(index)) {
 					if (from.select[index] != false) {
-						console.log("["+from.NAME+"] index["+index+"] 1= "+from.select[index]);
+						console.log("[" + from.NAME + "] index[" + index + "] 1= " + from.select[index]);
 						robj[from.select[index]] = value;
 					} else {
-						console.log("["+from.NAME+"] index["+index+"] 2= ø");
+						console.log("[" + from.NAME + "] index[" + index + "] 2= ø");
 					}
 				} else {
-					console.log("["+from.NAME+"] index["+index+"] 3= "+i_internProperty(index));
+					console.log("[" + from.NAME + "] index[" + index + "] 3= " + i_internProperty(index));
 					robj[i_internProperty(index)] = value;
 				}
 			});
@@ -326,6 +333,46 @@ exports.find = function(Model) {
 		//console.log(res);
 		return [from.NAME, res];
 	}
+
+	/*
+	 * Internal helper functions
+	 */
+
+	/**
+	 * returns the name of the "AS" tablename from 
+	 * the name of the table
+	 * the index of the table
+	 * ex : AVATAR1
+	 */
+	var i_key = function(NAME, idx) {
+		return NAME + idx;
+	};
+
+	/**
+	 * returns the String to be used in ON or WHERE clause
+	 */
+	var i_where = function(on) {
+		var res = "";
+		_.each(on, function(value) {
+			res += " AND " + value.key + "." + value.field + value.value;
+		});
+		return res;
+	};
+
+	/**
+	 * Returns the string to be used as JS object property for join (inner objects)
+	 */
+	var i_internObj = function(propName) {
+		return stringUtils.toCamel(listOf + "_" + propName);
+	};
+
+	/**
+	 * Returns the string to be used as internal property (current rule: toCamelCase)
+	 */
+	var i_internProperty = function(propName) {
+		return stringUtils.toCamel(propName);
+	}
+
 
 	return obj;
 };
