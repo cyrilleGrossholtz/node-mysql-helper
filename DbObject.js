@@ -130,7 +130,7 @@ exports.find = function(Model) {
 		if (arg != undefined) {
 			obj._argsOn.push(arg);
 		}
-		// returns {field: String, value: String, decalage: Integer};
+		// Returns {field: String, value: String, decalage: Integer};
 		return obj;
 	};
 
@@ -140,8 +140,6 @@ exports.find = function(Model) {
 			where = {
 				decalage: -(stringUtils.occurrences(obj.currentModel.where[field].decalage, PARENT))
 			};
-			console.log("where.decalage");
-			console.log(where.decalage);
 		} else {
 			where = {
 				decalage: 0
@@ -151,7 +149,7 @@ exports.find = function(Model) {
 			console.log("THROWING : [WHERE for " + obj.currentModel.NAME + " is only defined after join with " + obj._from[obj._from.length - 1].NAME + "]");
 			throw "WHERE for " + obj.currentModel.NAME + " is only defined after join with " + obj._from[obj._from.length - 1].NAME;
 		}
-		// returns {field: String, value: String, decalage: Integer};
+		// Returns {field: String, value: String, decalage: Integer};
 		obj._where.push({
 			"key": i_key(obj._from[obj._from.length - 1 + where.decalage].NAME, (idx + where.decalage)),
 			"field": field,
@@ -270,17 +268,17 @@ exports.find = function(Model) {
 			var robj;
 			robj = {};
 			_.each(cobj, function(value, index) {
-				console.log("index: " + index);
-				console.log(from.select);
+				//console.log("index: " + index);
+				//console.log(from.select);
 				if (from.select && from.select.hasOwnProperty(index)) {
 					if (from.select[index] != false) {
-						console.log("[" + from.NAME + "] index[" + index + "] 1= " + from.select[index]);
+						//console.log("[" + from.NAME + "] index[" + index + "] 1= " + from.select[index]);
 						robj[from.select[index]] = value;
 					} else {
-						console.log("[" + from.NAME + "] index[" + index + "] 2= ø");
+						//console.log("[" + from.NAME + "] index[" + index + "] 2= ø");
 					}
 				} else {
-					console.log("[" + from.NAME + "] index[" + index + "] 3= " + i_internProperty(index));
+					//console.log("[" + from.NAME + "] index[" + index + "] 3= " + i_internProperty(index));
 					robj[i_internProperty(index)] = value;
 				}
 			});
@@ -303,7 +301,7 @@ exports.find = function(Model) {
 				recursion.lineIndex + 1 >= recursion.dbResult.length
 			) {
 				//break if this is the last line
-				console.log("end recursion");
+				//console.log("end recursion");
 				break;
 			} else {
 				// else check if there is a parent changed
@@ -339,7 +337,7 @@ exports.find = function(Model) {
 	 */
 
 	/**
-	 * returns the name of the "AS" tablename from 
+	 * Returns the name of the "AS" tablename from 
 	 * the name of the table
 	 * the index of the table
 	 * ex : AVATAR1
@@ -349,7 +347,7 @@ exports.find = function(Model) {
 	};
 
 	/**
-	 * returns the String to be used in ON or WHERE clause
+	 * Returns the String to be used in ON or WHERE clause
 	 */
 	var i_where = function(on) {
 		var res = "";

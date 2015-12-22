@@ -625,6 +625,7 @@ describe('transform', function() {
             assert.equal(DbObject.stringUtils.occurrences("foo", regexp), 1);
             assert.equal(DbObject.stringUtils.occurrences("foofoofoo", regexp), 3);
             assert.equal(DbObject.stringUtils.occurrences("fooFoofoo", regexp), 3);
+            assert.equal(DbObject.stringUtils.occurrences("fooOfFoo", regexp), 2);
         });
     });
 });
