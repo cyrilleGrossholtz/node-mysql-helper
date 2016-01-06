@@ -1,11 +1,12 @@
 var _ = require('underscore');
 
-var INNER_JOIN = "INNER JOIN";
-var LEFT_JOIN = "LEFT JOIN";
-var PARENT = /parent/gi;
+const INNER_JOIN = "INNER JOIN";
+const LEFT_JOIN = "LEFT JOIN";
+const PARENT = /parent/gi;
 
-var listOf = "LIST_OF";
-var defaultIdentifier = "ID";
+const listOf = "LIST_OF";
+const defaultIdentifier = "ID";
+const createOrderBy = true;
 
 //dbObject.find(List).where('ID', '= 2').innerJoin(User).on('RIGHTS', '>= 0').where('ID', '= 1').toString();
 // -> 
@@ -191,6 +192,14 @@ exports.find = function(Model) {
 				if (index != 0)
 					res += " AND";
 				res += " " + value.key + "." + value.field + value.value;
+			});
+		}
+		if(createOrderBy) {
+			res += " ORDER BY ";
+			_.each(obj._from, function(value, index) {
+				if (index != 0)
+					res += ", "
+				res += i_key(value.NAME, index)+"."+value.identifier;
 			});
 		}
 		return res;

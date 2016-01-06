@@ -10,7 +10,7 @@ describe('List', function() {
         it('@should create query for simple select', function() {
             assert.equal(
                 DbObject.find(List).toString(),
-                "SELECT * FROM LIST LIST0"
+                "SELECT * FROM LIST LIST0 ORDER BY LIST0.ID"
             );
         });
     });
@@ -19,7 +19,7 @@ describe('List', function() {
             var req = DbObject.find(List).where("ID", " = ?", 1);
             assert.equal(
                 req.toString(),
-                "SELECT * FROM LIST LIST0 WHERE LIST0.ID = ?"
+                "SELECT * FROM LIST LIST0 WHERE LIST0.ID = ? ORDER BY LIST0.ID"
             );
             assert.equal(1, req.args().length);
             assert.deepEqual([1], req.args());
@@ -27,14 +27,14 @@ describe('List', function() {
         it('@should query for simple select with multiple where clause', function() {
             assert.equal(
                 DbObject.find(List).where("ID", " = 1").where("FIELD", " = \"VALEUR\"").toString(),
-                "SELECT * FROM LIST LIST0 WHERE LIST0.ID = 1 AND LIST0.FIELD = \"VALEUR\""
+                "SELECT * FROM LIST LIST0 WHERE LIST0.ID = 1 AND LIST0.FIELD = \"VALEUR\" ORDER BY LIST0.ID"
             );
         });
         it('@should query for simple select with multiple where clause some having query args', function() {
             var req = DbObject.find(List).where("ID", " = 1").where("FIELD", " = \"VALEUR\"").where("OTHERFIELD", " = ?", "somevalue");
             assert.equal(
                 req.toString(),
-                "SELECT * FROM LIST LIST0 WHERE LIST0.ID = 1 AND LIST0.FIELD = \"VALEUR\" AND LIST0.OTHERFIELD = ?"
+                "SELECT * FROM LIST LIST0 WHERE LIST0.ID = 1 AND LIST0.FIELD = \"VALEUR\" AND LIST0.OTHERFIELD = ? ORDER BY LIST0.ID"
             );
             assert.equal(1, req.args().length);
             assert.deepEqual(["somevalue"], req.args());
@@ -49,26 +49,26 @@ describe('List', function() {
         it('@should create query for simple select with inner join', function() {
             assert.equal(
                 DbObject.find(List).innerJoin(User).toString(),
-                "SELECT * FROM LIST LIST0 INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID"
+                "SELECT * FROM LIST LIST0 INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID ORDER BY LIST0.ID, USER_HAS_LIST1.ID, USER2.ID"
             );
         });
         it('@should create query for simple select with inner join and specific ON join query', function() {
             assert.equal(
                 DbObject.find(List).innerJoin(User).on('ID', " = 1").toString(),
-                "SELECT * FROM LIST LIST0 INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID AND USER2.ID = 1"
+                "SELECT * FROM LIST LIST0 INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID AND USER2.ID = 1 ORDER BY LIST0.ID, USER_HAS_LIST1.ID, USER2.ID"
             );
         });
         it('@should create query for simple select with inner join and specific ON for inner request', function() {
             assert.equal(
                 DbObject.find(List).innerJoin(User).on('RIGHTS', " > 1").toString(),
-                "SELECT * FROM LIST LIST0 INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID AND USER_HAS_LIST1.RIGHTS > 1 INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID"
+                "SELECT * FROM LIST LIST0 INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID AND USER_HAS_LIST1.RIGHTS > 1 INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID ORDER BY LIST0.ID, USER_HAS_LIST1.ID, USER2.ID"
             );
         });
         it('@should create query for simple select with inner join and specific ON join query', function() {
             var req = DbObject.find(List).where('OTHERFIELD', " = ?", "somevalue").innerJoin(User).on('RIGHTS', " > ?", 1);
             assert.equal(
                 req.toString(),
-                "SELECT * FROM LIST LIST0 INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID AND USER_HAS_LIST1.RIGHTS > ? INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID WHERE LIST0.OTHERFIELD = ?"
+                "SELECT * FROM LIST LIST0 INNER JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID AND USER_HAS_LIST1.RIGHTS > ? INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID WHERE LIST0.OTHERFIELD = ? ORDER BY LIST0.ID, USER_HAS_LIST1.ID, USER2.ID"
             );
             assert.equal(2, req.args().length);
             assert.deepEqual([1, "somevalue"], req.args());
@@ -78,13 +78,13 @@ describe('List', function() {
         it('@should create query for simple select with left join', function() {
             assert.equal(
                 DbObject.find(List).leftJoin(User).toString(),
-                "SELECT * FROM LIST LIST0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID LEFT JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID"
+                "SELECT * FROM LIST LIST0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID LEFT JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID ORDER BY LIST0.ID, USER_HAS_LIST1.ID, USER2.ID"
             );
         });
         it('@should create query for simple select with inner join and specific ON join query', function() {
             assert.equal(
                 DbObject.find(List).leftJoin(User).on('RIGHTS', " > 1").toString(),
-                "SELECT * FROM LIST LIST0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID AND USER_HAS_LIST1.RIGHTS > 1 LEFT JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID"
+                "SELECT * FROM LIST LIST0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID AND USER_HAS_LIST1.RIGHTS > 1 LEFT JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID ORDER BY LIST0.ID, USER_HAS_LIST1.ID, USER2.ID"
             );
         });
     });
@@ -95,7 +95,7 @@ describe('User', function() {
         it('@should resolve on to where when no join is defined', function() {
             assert.equal(
                 DbObject.find(User).on('OTHERFIELD', " = ?", 1).toString(),
-                "SELECT * FROM USER USER0 WHERE USER0.OTHERFIELD = ?"
+                "SELECT * FROM USER USER0 WHERE USER0.OTHERFIELD = ? ORDER BY USER0.ID"
             );
         });
     });
@@ -103,13 +103,13 @@ describe('User', function() {
         it('@should create query for simple select with left join', function() {
             assert.equal(
                 DbObject.find(User).leftJoin(List).toString(),
-                "SELECT * FROM USER USER0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.USER_ID = USER0.ID LEFT JOIN LIST LIST2 ON LIST2.ID = USER_HAS_LIST1.LIST_ID"
+                "SELECT * FROM USER USER0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.USER_ID = USER0.ID LEFT JOIN LIST LIST2 ON LIST2.ID = USER_HAS_LIST1.LIST_ID ORDER BY USER0.ID, USER_HAS_LIST1.ID, LIST2.ID"
             );
         });
         it('@should create query for simple select with inner join and specific ON join query', function() {
             assert.equal(
                 DbObject.find(User).leftJoin(List).on('RIGHTS', " > 1").toString(),
-                "SELECT * FROM USER USER0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.USER_ID = USER0.ID AND USER_HAS_LIST1.RIGHTS > 1 LEFT JOIN LIST LIST2 ON LIST2.ID = USER_HAS_LIST1.LIST_ID"
+                "SELECT * FROM USER USER0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.USER_ID = USER0.ID AND USER_HAS_LIST1.RIGHTS > 1 LEFT JOIN LIST LIST2 ON LIST2.ID = USER_HAS_LIST1.LIST_ID ORDER BY USER0.ID, USER_HAS_LIST1.ID, LIST2.ID"
             );
         });
     });
@@ -147,7 +147,7 @@ describe('User', function() {
         it('@should work with single join too and where clause on last element', function() {
             assert.equal(
                 DbObject.find(User).leftJoin(Avatar).where('OTHERFIELD', " = ?", 1).toString(),
-                "SELECT * FROM USER USER0 LEFT JOIN AVATAR AVATAR1 ON AVATAR1.ID = USER0.AVATAR_ID WHERE AVATAR1.OTHERFIELD = ?"
+                "SELECT * FROM USER USER0 LEFT JOIN AVATAR AVATAR1 ON AVATAR1.ID = USER0.AVATAR_ID WHERE AVATAR1.OTHERFIELD = ? ORDER BY USER0.ID, AVATAR1.ID"
             );
         });
         it('@should throw when you play with impossible inner values (nasty boy !)', function() {
@@ -159,6 +159,13 @@ describe('User', function() {
             assert.throws(function() {
                 req.toString();
             });
+        });
+    });
+});
+
+describe('Insert', function() {
+    describe('Single layer', function() {
+        it('@should', function() {
         });
     });
 });

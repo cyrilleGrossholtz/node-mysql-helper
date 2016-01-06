@@ -35,6 +35,10 @@ SELECT *
 		AND USER_HAS_LIST1.RIGHTS > 1 
 	INNER JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID
 ```
+
+nb: For conveignance ORDER BY clause is automatically set by ID (because they have to be grouped for translation into objects)
+nb2 : In future release it, ORDER BY clause should be customizable
+
 ## Using results
 Please note that this currently only works with :
 [mysql npm plugin](https://www.npmjs.com/package/mysql "mysql npm plugin link")
