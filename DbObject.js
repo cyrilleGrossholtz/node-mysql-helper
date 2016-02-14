@@ -249,8 +249,6 @@ exports.find = function(Model) {
 	 * 		dbResult : the result from the DB in the nested format
 	 *	}
 	 * fromIndex is the current index in the _from array (which is in the JOIN order)
-	 * parentResultName is the name of the parent object in a result line
-	 * parentIndex is the common value of the parent object
 	 */
 	var digestRecursive = function(recursion, fromIndex) {
 		var res = [];
@@ -264,8 +262,6 @@ exports.find = function(Model) {
 
 		// robj is the value of the current object on the current row
 		var cobj;
-
-		// lobj is the value to be added in the result array
 
 		while (true) {
 			if (!recursion.dbResult[recursion.lineIndex].hasOwnProperty(resultName)) {
@@ -295,7 +291,8 @@ exports.find = function(Model) {
 			// if there is a next _from element, try to fetch it
 			if (obj._from.length > fromIndex + 1) {
 				var innerList = digestRecursive(recursion, fromIndex + 1, resultName, from.identifier, cobj[from.identifier]);
-				robj[i_internObj(innerList[0])] = innerList[1];
+				if(innerList.length > 0)
+					robj[i_internObj(innerList[0])] = innerList[1];
 			}
 
 			res.push(robj);
