@@ -260,42 +260,55 @@ exports.find = function(Model) {
 		var resultName = i_key(from.NAME, fromIndex);
 		//console.log("begining of recursion [line=" + recursion.lineIndex + "][fromIndex=" + fromIndex + "][resultName=" + resultName + "]");
 
-		// robj is the value of the current object on the current row
+		// cobj is the value of the object for the current object in the current line
 		var cobj;
+
+		// robj is the result value to be added in the result array
+		var robj;
 
 		while (true) {
 			if (!recursion.dbResult[recursion.lineIndex].hasOwnProperty(resultName)) {
 				console.log("THROWING : [Could not find object[" + resultName + "] in line[" + recursion.lineIndex + "] ]");
 				throw "Could not find object[" + resultName + "] in line[" + recursion.lineIndex + "]"
 			}
-			cobj = recursion.dbResult[recursion.lineIndex][resultName];
-			// do the work
-			var robj;
 			robj = {};
+			cobj = recursion.dbResult[recursion.lineIndex][resultName];
+			
+			var foundNonNullValues = false;
+			// First get the "normal" object properties
 			_.each(cobj, function(value, index) {
 				//console.log("index: " + index);
 				//console.log(from.select);
+				
+				// For each property
 				if (from.select && from.select.hasOwnProperty(index)) {
+					// if some specific behaviour was defined in property file
 					if (from.select[index] != false) {
-						//console.log("[" + from.NAME + "] index[" + index + "] 1= " + from.select[index]);
+						// case for specific property defined
+						foundNonNullValues |= value!= null;
+						////console.log("[" + from.NAME + "] index[" + index + "] 1= " + from.select[index]);
 						robj[from.select[index]] = value;
 					} else {
-						//console.log("[" + from.NAME + "] index[" + index + "] 2= ø");
+						// case for false -> property to be hidden
+						////console.log("[" + from.NAME + "] index[" + index + "] 2= ø");
 					}
 				} else {
-					//console.log("[" + from.NAME + "] index[" + index + "] 3= " + i_internProperty(index));
+					// if no specific behaviour was defined then use i_internProperty to create a JSlike type of property
+					////console.log("[" + from.NAME + "] index[" + index + "] 3= " + i_internProperty(index));
+					foundNonNullValues |= value!= null;
 					robj[i_internProperty(index)] = value;
 				}
 			});
 
-			// if there is a next _from element, try to fetch it
-			if (obj._from.length > fromIndex + 1) {
-				var innerList = digestRecursive(recursion, fromIndex + 1, resultName, from.identifier, cobj[from.identifier]);
-				if(innerList.length > 0)
-					robj[i_internObj(innerList[0])] = innerList[1];
-			}
+			// then try to fetch subobjects
 
-			res.push(robj);
+			// if there is a next _from element, try to fetch it
+			if (foundNonNullValues && obj._from.length > fromIndex + 1) {
+				var innerList = digestRecursive(recursion, fromIndex + 1, resultName, from.identifier, cobj[from.identifier]);
+				robj[i_internObj(innerList[0])] = innerList[1];
+			}
+			if(foundNonNullValues)
+				res.push(robj);
 
 			// put the cursor to the next line
 			// Stop the loop if :
