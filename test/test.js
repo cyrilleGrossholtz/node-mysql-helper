@@ -88,6 +88,101 @@ describe('List', function() {
             );
         });
     });
+    describe('#orderby', function() {
+        it('@should throw if order is not an array', function() {
+            var OtherUser = _.clone(User);
+            OtherUser.join = {
+                AVATAR: [{
+                    NAME: "AVATAR",
+                    keyf: "AVATAR_ID",
+                    key: "ID",
+                    order: {
+                        field: "ORDERFIELD",
+                        order: "ASC"
+                    }
+                }]
+            };
+            assert.throws(function() {
+                DbObject.find(OtherUser).leftJoin(Avatar).toString()
+            });
+
+        });
+        it('@should work for other model in join definition', function() {
+            var OtherUser = _.clone(User);
+            OtherUser.join = {
+                AVATAR: [{
+                    NAME: "AVATAR",
+                    keyf: "AVATAR_ID",
+                    key: "ID",
+                    order: [{
+                        field: "ORDERFIELD",
+                        order: "ASC"
+                    }]
+                }]
+            };
+
+            assert.equal(
+                DbObject.find(OtherUser).leftJoin(Avatar).toString(),
+                "SELECT * FROM USER USER0 LEFT JOIN AVATAR AVATAR1 ON AVATAR1.ID = USER0.AVATAR_ID ORDER BY USER0.ID, AVATAR1.ID, AVATAR1.ORDERFIELD ASC"
+            );
+        });
+        it('@should work for first model', function() {
+            var OtherUser = _.clone(User);
+            OtherUser.join = {
+                AVATAR: [{
+                    NAME: "AVATAR",
+                    keyf: "AVATAR_ID",
+                    key: "ID"
+                }]
+            };
+            OtherUser.order = [{
+                field: "ORDERFIELD",
+                order: "ASC"
+            }];
+
+            assert.equal(
+                DbObject.find(OtherUser).leftJoin(Avatar).toString(),
+                "SELECT * FROM USER USER0 LEFT JOIN AVATAR AVATAR1 ON AVATAR1.ID = USER0.AVATAR_ID ORDER BY USER0.ID, USER0.ORDERFIELD ASC, AVATAR1.ID"
+            );
+        });
+        it('@should work for first model', function() {
+            var OtherUser = _.clone(User);
+            var OtherAvatar = _.clone(Avatar);
+            OtherUser.join = {
+                AVATAR: [{
+                    NAME: "AVATAR",
+                    keyf: "AVATAR_ID",
+                    key: "ID"
+                }]
+            };
+            OtherAvatar.order = [{
+                field: "ORDERFIELD",
+                order: "ASC"
+            }];
+
+            assert.equal(
+                DbObject.find(OtherUser).leftJoin(OtherAvatar).toString(),
+                "SELECT * FROM USER USER0 LEFT JOIN AVATAR AVATAR1 ON AVATAR1.ID = USER0.AVATAR_ID ORDER BY USER0.ID, AVATAR1.ID, AVATAR1.ORDERFIELD ASC"
+            );
+        });
+        it('@should not work inline with zero arguments', function() {
+            assert.throws(function() {
+                DbObject.find(List).leftJoin(User).orderBy().toString();
+            });
+        });
+        it('@should work inline with one argument', function() {
+            assert.equal(
+                DbObject.find(List).leftJoin(User).orderBy('ORDERFIELD').toString(),
+                "SELECT * FROM LIST LIST0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID LEFT JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID ORDER BY LIST0.ID, USER_HAS_LIST1.ID, USER2.ID, USER2.ORDERFIELD"
+            );
+        });
+        it('@should work inline with two arguments', function() {
+            assert.equal(
+                DbObject.find(List).leftJoin(User).orderBy('ORDERFIELD', 'ASC').toString(),
+                "SELECT * FROM LIST LIST0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID LEFT JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID ORDER BY LIST0.ID, USER_HAS_LIST1.ID, USER2.ID, USER2.ORDERFIELD ASC"
+            );
+        });
+    });
 });
 
 describe('User', function() {
@@ -165,8 +260,7 @@ describe('User', function() {
 
 describe('Insert', function() {
     describe('Single layer', function() {
-        it('@should', function() {
-        });
+        it('@should', function() {});
     });
 });
 

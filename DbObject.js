@@ -40,7 +40,8 @@ exports.find = function(Model) {
 		"NAME": Model.NAME,
 		"identifier": Model.identifier,
 		"on": [],
-		"select": Model.select
+		"select": Model.select,
+		"order": !_.has(Model, "order") ? [] : Model.order
 	}];
 	/* _from : array of obj :
 		{
@@ -75,12 +76,16 @@ exports.find = function(Model) {
 		// verify join is defined
 		if (!obj.currentModel.hasOwnProperty("join") || !obj.currentModel.join.hasOwnProperty(otherModel.NAME) || !_.isArray(obj.currentModel.join[otherModel.NAME]) || obj.currentModel.join[otherModel.NAME].length == 0) {
 			console.log("THROWING : [No join defined for [" + obj.currentModel.NAME + "] [" + type + "] [" + otherModel.NAME + "]]");
-			throw "No join defined for [" + obj.currentModel.NAME + "] [" + type + "] [" + otherModel.NAME + "]";
+			throw new Error("No join defined for [" + obj.currentModel.NAME + "] [" + type + "] [" + otherModel.NAME + "]");
 		}
 		var join = obj.currentModel.join[otherModel.NAME];
 		lastJoinLength = join.length;
 		// get inner join from current model for new model in parameter
 		_.each(join, function(value) {
+			if (_.has(value, "order") && !_.isArray(value.order)) {
+				console.log("THROWING : [Model error [" + value.NAME + "] order property should be an array]");
+				throw new Error("Model error [" + value.NAME + "] order property should be an array");
+			}
 			var add = _.clone(value);
 			add.type = type;
 			add.on = [];
@@ -95,12 +100,23 @@ exports.find = function(Model) {
 			obj._from.push(add);
 			// add the new model in the stack
 		});
+		// Deal with specific SELECT properties 
 		if (!obj._from[obj._from.length - 1].hasOwnProperty("select")) {
 			obj._from[obj._from.length - 1].select = {};
 		}
 		_.each(otherModel.select, function(value, index) {
 			obj._from[obj._from.length - 1].select[index] = value;
 		});
+
+		//Deal with specific ORDER properties
+		if (!obj._from[obj._from.length - 1].hasOwnProperty("order")) {
+			obj._from[obj._from.length - 1].order = [];
+		}
+		if (otherModel.hasOwnProperty("order")) {
+			_.each(otherModel.order, function(value) {
+				obj._from[obj._from.length - 1].order.push(value);
+			});
+		}
 
 		obj.currentModel = otherModel;
 		return obj;
@@ -135,6 +151,28 @@ exports.find = function(Model) {
 		return obj;
 	};
 
+	obj.orderBy = function(field, order) {
+		if(_.isUndefined(field)) {
+			console.log("THROWING : [Field argument should be given for orderBy]");
+			throw new Error("Field argument should be given for orderBy");
+		}
+		if(!_.isString(field)) {
+			console.log("THROWING : [Field argument should be a String for orderBy]");
+			throw new Error("Field argument should be a String for orderBy");
+		}
+		if(!_.isUndefined(order) && !_.isString(order)) {
+			console.log("THROWING : [When given, order argument should be a String for orderBy]");
+			throw new Error("When given, order argument should be a String for orderBy");
+		}
+		var orderBy = {
+			field: field,
+			order: order
+		};
+
+		obj._from[obj._from.length - 1].order.push(orderBy);
+		return obj;
+	}
+
 	obj.where = function(field, value, arg) {
 		var where;
 		if (obj.currentModel.hasOwnProperty("where") && obj.currentModel.where.hasOwnProperty(field)) {
@@ -148,7 +186,7 @@ exports.find = function(Model) {
 		}
 		if (lastJoinLength + where.decalage <= 0) {
 			console.log("THROWING : [WHERE for " + obj.currentModel.NAME + " is only defined after join with " + obj._from[obj._from.length - 1].NAME + "]");
-			throw "WHERE for " + obj.currentModel.NAME + " is only defined after join with " + obj._from[obj._from.length - 1].NAME;
+			throw new Error("WHERE for " + obj.currentModel.NAME + " is only defined after join with " + obj._from[obj._from.length - 1].NAME);
 		}
 		// Returns {field: String, value: String, decalage: Integer};
 		obj._where.push({
@@ -181,7 +219,7 @@ exports.find = function(Model) {
 						break;
 					default:
 						console.log("THROWING : [Type [" + value.type + "] not currently implemented in FROM clause]");
-						throw "Type [" + value.type + "] not currently implemented in FROM clause";
+						throw new Error("Type [" + value.type + "] not currently implemented in FROM clause");
 				}
 			}
 			previous = value;
@@ -194,12 +232,17 @@ exports.find = function(Model) {
 				res += " " + value.key + "." + value.field + value.value;
 			});
 		}
-		if(createOrderBy) {
+		if (createOrderBy) {
 			res += " ORDER BY ";
 			_.each(obj._from, function(value, index) {
 				if (index != 0)
 					res += ", "
-				res += i_key(value.NAME, index)+"."+value.identifier;
+				res += i_key(value.NAME, index) + "." + value.identifier;
+				if (_.has(value, "order") && _.isArray(value.order)) {
+					_.each(value.order, function(ordervalue) {
+						res += ", " + i_key(value.NAME, index) + "." + ordervalue.field + (_.isUndefined(ordervalue.order) ? "" : (" " + ordervalue.order));
+					});
+				}
 			});
 		}
 		return res;
@@ -231,7 +274,7 @@ exports.find = function(Model) {
 		}, ...] */
 		if (!_.isArray(dbResult)) {
 			console.log("THROWING : [digestNested only accepts array as parameter]");
-			throw "digestNested only accepts array as parameter";
+			throw new Error("digestNested only accepts array as parameter");
 		}
 		var recursion = {
 				lineIndex: 0,
@@ -269,23 +312,23 @@ exports.find = function(Model) {
 		while (true) {
 			if (!recursion.dbResult[recursion.lineIndex].hasOwnProperty(resultName)) {
 				console.log("THROWING : [Could not find object[" + resultName + "] in line[" + recursion.lineIndex + "] ]");
-				throw "Could not find object[" + resultName + "] in line[" + recursion.lineIndex + "]"
+				throw new Error("Could not find object[" + resultName + "] in line[" + recursion.lineIndex + "]");
 			}
 			robj = {};
 			cobj = recursion.dbResult[recursion.lineIndex][resultName];
-			
+
 			var foundNonNullValues = false;
 			// First get the "normal" object properties
 			_.each(cobj, function(value, index) {
 				//console.log("index: " + index);
 				//console.log(from.select);
-				
+
 				// For each property
 				if (from.select && from.select.hasOwnProperty(index)) {
 					// if some specific behaviour was defined in property file
 					if (from.select[index] != false) {
 						// case for specific property defined
-						foundNonNullValues |= value!= null;
+						foundNonNullValues |= value != null;
 						////console.log("[" + from.NAME + "] index[" + index + "] 1= " + from.select[index]);
 						robj[from.select[index]] = value;
 					} else {
@@ -295,7 +338,7 @@ exports.find = function(Model) {
 				} else {
 					// if no specific behaviour was defined then use i_internProperty to create a JSlike type of property
 					////console.log("[" + from.NAME + "] index[" + index + "] 3= " + i_internProperty(index));
-					foundNonNullValues |= value!= null;
+					foundNonNullValues |= value != null;
 					robj[i_internProperty(index)] = value;
 				}
 			});
@@ -307,7 +350,7 @@ exports.find = function(Model) {
 				var innerList = digestRecursive(recursion, fromIndex + 1, resultName, from.identifier, cobj[from.identifier]);
 				robj[i_internObj(innerList[0])] = innerList[1];
 			}
-			if(foundNonNullValues)
+			if (foundNonNullValues)
 				res.push(robj);
 
 			// put the cursor to the next line
