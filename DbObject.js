@@ -200,7 +200,7 @@ exports.find = function(Model) {
 		return obj;
 	};
 
-	obj.toString = function() {
+	obj.toString = function(skipOrderBy) {
 		var res = obj._select;
 		res += " FROM";
 		var previous = null
@@ -232,7 +232,9 @@ exports.find = function(Model) {
 				res += " " + value.key + "." + value.field + value.value;
 			});
 		}
-		if (createOrderBy) {
+		if ((!_.isUndefined(skipOrderBy) && !skipOrderBy) || (_.isUndefined(skipOrderBy) && createOrderBy)) {
+			// if skipOrderBy is defined -> use thie value to determine if display ORDERBY argument
+			// else use the class argument createOrderBy
 			res += " ORDER BY ";
 			_.each(obj._from, function(value, index) {
 				if (index != 0)

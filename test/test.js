@@ -182,6 +182,12 @@ describe('List', function() {
                 "SELECT * FROM LIST LIST0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID LEFT JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID ORDER BY LIST0.ID, USER_HAS_LIST1.ID, USER2.ID, USER2.ORDERFIELD ASC"
             );
         });
+        it('@should not display order by property is specifically requested not to', function() {
+            assert.equal(
+                DbObject.find(List).leftJoin(User).orderBy('ORDERFIELD', 'ASC').toString(true),
+                "SELECT * FROM LIST LIST0 LEFT JOIN USER_HAS_LIST USER_HAS_LIST1 ON USER_HAS_LIST1.LIST_ID = LIST0.ID LEFT JOIN USER USER2 ON USER2.ID = USER_HAS_LIST1.USER_ID"
+            );
+        });
     });
 });
 
