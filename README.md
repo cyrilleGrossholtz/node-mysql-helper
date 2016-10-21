@@ -215,6 +215,42 @@ module.exports = {
 };
 ```
 
+### Explanation
+
+```javascript
+module.exports = {
+    NAME: "NAME_OF_THE_TABLE", // MANDATORY [IDF:STRING] : the name of the table in the model
+    identifier : "IDENTIFIER", // MANDATORY [IDF:STRING] : the name of the ID column (must be unique)
+    select: {
+        SOME_COLUMN: "theNewNameItWillHave", // [IDF:STRING] : rename an identifier in the final object 
+        SOME_OTHER_COLUMN: false // [IDF:BOOLEAN] : removes (or not if true) the column from the result (e.g. : password)
+    },
+    join: {
+        // [{NAME: String, key: String, keyf: String, identifier}]
+        USER: [ // defines an join to a table, here : NAME_OF_THE_OTHER_TABLE
+        { // Definition of a join (there can be any number of join)
+            NAME: "NAME_OF_THE_JOIN_TABLE", // the name of the join table
+            keyf: "FOREIGN_IDENTIFIER", // the identifier to join on in the join table
+            key: "CURRENT_TABLE_IDENTIFIER", // the identifier to join on in the current table
+            identifier : "IDENTIFIER ", // the identifier of the join table
+        }, { // the last join should represents an other model to join on with 
+            // DbObject.find(MyFirstModelObject).innerJoin(MyNextModelObject)
+            NAME: "NAME_OF_THE_OTHER_TABLE", // the name of the join table
+            keyf: "FOREIGN_IDENTIFIER_ON_NEXT_TABLE", // the identifier to join on in the last table
+            key: "JOIN_TABLE_IDENTIFIER" // the identifier to join on in the join table
+            // No identifier ? Of course, the configuration will be loaded from the model
+        }]
+    },
+    where: {
+        // {field: String, value: String, decalage: String};
+        SOME_FIELD_ON_JOIN_TABLE: { 
+            decalage: "parent" // if you need to have a where clause on an JOIN attribute, you can but you have to describe this attribute here and say "look in the parent" or "look in the parent of my parent" so that we know in which table has the SOME_FIELD_ON_JOIN_TABLE field.
+            //nb : only the number of "parent" string occurence counts
+        }
+    }
+};
+```
+
 # Next steps
 * Ease the rest of the CRUD style DB manipulations
 
